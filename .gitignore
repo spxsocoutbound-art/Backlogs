@@ -1,0 +1,11 @@
+Environment files
+.env
+.env.local
+.env.*.local
+
+Local secrets
+decoded-sa.json
+decoded-sa-normalized-key-check.txt
+
+*.bak
+*.backup
