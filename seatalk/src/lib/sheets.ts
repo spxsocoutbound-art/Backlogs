@@ -48,7 +48,7 @@ export async function writeToGoogleSheet(
         ],
       },
     });
-  } catch (e) {
+  } catch {
     // ignore if already exists
   }
 

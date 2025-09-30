@@ -1,3 +1,41 @@
+# SeaTalk — CSV ZIP → Google Sheets
+
+Upload a ZIP of CSV files, automatically clean/merge/sort them, and export to a target Google Sheets worksheet.
+
+## Setup
+
+1. Copy env and fill credentials
+
+```bash
+cp .env.example .env.local
+```
+
+Populate:
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (use `\n` for newlines)
+- `GOOGLE_SHEETS_SPREADSHEET_ID`
+- `TARGET_SHEET_NAME` (defaults to `data_integration`)
+- `NEXT_PUBLIC_TARGET_SHEET_NAME` (optional header display)
+
+Share the Google Sheet with the service account email.
+
+## Development
+
+```bash
+pnpm dev
+```
+
+## Build
+
+```bash
+pnpm build && pnpm start
+```
+
+## Notes
+
+- Max allowed per extracted CSV file: 25 MB
+- Accepts `.zip` uploads containing `.csv` files only
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
