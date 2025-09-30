@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* Theme variables (used by Tailwind v4 inline theme and custom styles) */
+:root{
+  --background: #04111b;
+  --foreground: #e6eef6;
+
+  /* App design tokens */
+  --bg:#0f1724; 
+  --card:#0b1220; 
+  --muted:#9aa4b2; 
+  --accent:#00c2a8; 
+  --danger:#ff6b6b; 
+  --glass: rgba(255,255,255,0.03);
+  --brand-gradient: linear-gradient(135deg,var(--accent),#0ea5ff);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #04111b;
+    --foreground: #e6eef6;
+  }
+}
+
+/* Base */
+*{box-sizing:border-box}
+html, body { height: 100%; }
+body{
+  margin:0;
+  min-height:100vh;
+  background:linear-gradient(180deg,#071426 0%, #04111b 100%);
+  color:var(--foreground);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+
+/* Layout + components derived from the provided design */
+.wrap{width:100%; max-width:980px;}
+header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px}
+.brand{display:flex; gap:12px; align-items:center}
+.logo{width:48px;height:48px;background:var(--brand-gradient);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
+h1{font-size:18px;margin:0}
+p.lead{margin:0;color:var(--muted); font-size:13px}
+
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:18px; box-shadow: 0 6px 30px rgba(3,7,18,0.6); border:1px solid rgba(255,255,255,0.03)}
+.row{display:flex; gap:12px; flex-wrap:wrap}
+.col{flex:1 1 0}
+
+.uploader{display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:center}
+input[type=file]{display:block}
+button{background:linear-gradient(90deg,var(--accent),#06b6d4); border:none; color:#072024; padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer}
+button.ghost{background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted)}
+button:disabled{opacity:0.45; cursor:not-allowed}
+
+.progress{height:12px; background:rgba(255,255,255,0.03); border-radius:999px; overflow:hidden}
+.bar{height:100%; background:linear-gradient(90deg,var(--accent),#06b6d4); width:0%}
+
+.logs{margin-top:12px; font-family:monospace; font-size:13px; color:var(--muted); max-height:240px; overflow:auto; padding:12px; border-radius:8px; background:var(--glass); border:1px solid rgba(255,255,255,0.02)}
+.muted{color:var(--muted); font-size:13px}
+.footer{margin-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap}
+
+@media (max-width:680px){
+  header{flex-direction:column; align-items:flex-start}
+  .uploader{grid-template-columns:1fr}
+  .brand h1{font-size:16px}
+}
