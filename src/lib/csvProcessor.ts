@@ -12,7 +12,7 @@ return n - 1;
 const dropRanges: [number, number][] = [
 [colIndex('C'), colIndex('I')],
 [colIndex('K'), colIndex('M')],
-[colIndex('O'), colIndex('U')],
+[colIndex('P'), colIndex('U')],
 [colIndex('Y'), colIndex('AA')],
 [colIndex('AE'), colIndex('AH')],
 ];
