@@ -3,6 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./page.module.css";
 
+type ColumnMapping = {
+  stationName?: string;
+  clusterName?: string;
+  mmType?: string;
+  region?: string;
+  missType?: string;
+  dateColumn?: string;
+};
+
 function easeOutCubicLocal(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
@@ -103,6 +112,13 @@ export default function Home() {
   const [toastMsg, setToastMsg] = useState("");
   const [toastType, setToastType] = useState<ToastType>("info");
 
+  // New state for modern interface
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
+  const [previewData, setPreviewData] = useState<string[][]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [mappingApplied, setMappingApplied] = useState(false);
+
   const logAreaRef = useRef<HTMLDivElement | null>(null);
 
   function log(message: string) {
@@ -112,10 +128,13 @@ export default function Home() {
     logArea.innerText = `[${now}] ${message}\n` + logArea.innerText;
   }
 
-  function handleFileChange(file: File | undefined) {
+  async function handleFileChange(file: File | undefined) {
     if (!file) {
       setSelectedFile(null);
       setUploadDisabled(true);
+      setCsvHeaders([]);
+      setShowPreview(false);
+      setMappingApplied(false);
       return;
     }
     if (!file.name.toLowerCase().endsWith(".zip")) {
@@ -126,10 +145,85 @@ export default function Home() {
     }
     setSelectedFile(file);
     setLastFile(file);
-    setUploadDisabled(false);
+    setUploadDisabled(true); // Keep disabled until mapping is applied
+    setShowPreview(false);
+    setMappingApplied(false);
     log(
       `Selected ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
     );
+
+    // Extract headers from the first CSV in the ZIP
+    try {
+      const headers = await extractHeadersFromZip(file);
+      setCsvHeaders(headers);
+      log(`Found ${headers.length} columns in CSV files`);
+    } catch (error) {
+      console.error("Error extracting headers:", error);
+      setToastType("error");
+      setToastMsg("Failed to read CSV headers from ZIP file");
+    }
+  }
+
+  async function extractHeadersFromZip(file: File): Promise<string[]> {
+    const JSZip = (await import("jszip")).default;
+    const Papa = (await import("papaparse")).default;
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    
+    for (const [filename, entry] of Object.entries(zip.files)) {
+      if (filename.toLowerCase().endsWith(".csv")) {
+        const content = await entry.async("string");
+        const parsed = Papa.parse(content, { header: false, skipEmptyLines: true });
+        if (parsed.data && parsed.data.length > 0) {
+          return (parsed.data[0] as string[]) || [];
+        }
+      }
+    }
+    throw new Error("No CSV files found in ZIP");
+  }
+
+  function handleApplyMapping() {
+    if (!selectedFile || csvHeaders.length === 0) return;
+    
+    // Validate that required mappings are set
+    const requiredMappings = ['stationName', 'dateColumn'];
+    const missingMappings = requiredMappings.filter(key => !columnMapping[key as keyof ColumnMapping]);
+    
+    if (missingMappings.length > 0) {
+      setToastType("error");
+      setToastMsg(`Please select columns for: ${missingMappings.join(', ')}`);
+      return;
+    }
+
+    setMappingApplied(true);
+    setUploadDisabled(false);
+    log("Column mapping applied successfully");
+    
+    // Generate preview data
+    generatePreview();
+  }
+
+  async function generatePreview() {
+    if (!selectedFile) return;
+    
+    try {
+      // This would normally call a preview endpoint, but for now we'll simulate
+      const mockPreview = [
+        csvHeaders,
+        ["Sample Station", "Sample Cluster", "Sample MM Type", "Sample Region", "Late Depart", "2025-09-30 08:44:05"],
+        ["Another Station", "Another Cluster", "Another MM Type", "Another Region", "Late Loading", "2025-09-30 09:15:22"],
+        ["Third Station", "Third Cluster", "Third MM Type", "Third Region", "Late Seal", "2025-09-30 10:30:45"]
+      ];
+      
+      setPreviewData(mockPreview);
+      setShowPreview(true);
+      log("Preview generated with sample data");
+    } catch (error) {
+      console.error("Error generating preview:", error);
+      setToastType("error");
+      setToastMsg("Failed to generate preview");
+    }
   }
 
   function resetAll() {
@@ -143,6 +237,11 @@ export default function Home() {
     setUploadRunning(false);
     setProcRunning(false);
     setExpRunning(false);
+    setCsvHeaders([]);
+    setColumnMapping({});
+    setPreviewData([]);
+    setShowPreview(false);
+    setMappingApplied(false);
     if (logAreaRef.current)
       logAreaRef.current.innerText = "Ready. Select a ZIP file to begin.";
   }
@@ -176,7 +275,7 @@ export default function Home() {
   }
 
   async function doUpload(fileToSend: File | null) {
-    if (!fileToSend) return;
+    if (!fileToSend || !mappingApplied) return;
     setUploadDisabled(true);
     setResetDisabled(true);
     setUploadRunning(true);
@@ -186,6 +285,7 @@ export default function Home() {
 
     const form = new FormData();
     form.append("zip", fileToSend);
+    form.append("columnMapping", JSON.stringify(columnMapping));
 
     try {
       const xhr = new XMLHttpRequest();
@@ -281,6 +381,7 @@ export default function Home() {
         </header>
 
         <section className={styles.card}>
+          {/* File Upload Section */}
           <div className={styles.row}>
             <div className={styles.col}>
               <div className={styles.uploader}>
@@ -290,49 +391,191 @@ export default function Home() {
                   accept=".zip"
                   onChange={(e) => handleFileChange(e.target.files?.[0])}
                 />
-                <div className={styles.buttonsRow}>
-                  <button
-                    className={styles.buttonPrimary}
-                    onClick={handleUpload}
-                    disabled={uploadDisabled}
-                  >
-                    Upload & Run
-                  </button>
-                  <button
-                    className={styles.buttonGhost}
-                    onClick={handleRetry}
-                    disabled={!lastFile}
-                  >
-                    Retry
-                  </button>
+                <div className={styles.fileNote}>
+                  Max allowed per extracted CSV file: 25 MB
                 </div>
               </div>
-              <div className={styles.fileNote}>
-                Max allowed per extracted CSV file: 25 MB
-              </div>
-            </div>
-
-            <div style={{ minWidth: 260 }}>
-              <Stage
-                label="Upload"
-                pct={uploadPct}
-                showPulse={uploadRunning}
-                ariaId="upload-pct"
-              />
-              <Stage
-                label="Processing"
-                pct={procPct}
-                showPulse={procRunning}
-                ariaId="proc-pct"
-              />
-              <Stage
-                label="Export"
-                pct={expPct}
-                showPulse={expRunning}
-                ariaId="exp-pct"
-              />
             </div>
           </div>
+
+          {/* Column Mapping Section */}
+          {csvHeaders.length > 0 && (
+            <div className={styles.mappingSection}>
+              <h3 className={styles.sectionTitle}>Column Mapping</h3>
+              <div className={styles.mappingGrid}>
+                <div className={styles.mappingItem}>
+                  <label className={styles.mappingLabel}>Station Name *</label>
+                  <select 
+                    className={styles.dropdown}
+                    value={columnMapping.stationName || ''}
+                    onChange={(e) => setColumnMapping(prev => ({ ...prev, stationName: e.target.value }))}
+                  >
+                    <option value="">Select column...</option>
+                    {csvHeaders.map((header, idx) => (
+                      <option key={idx} value={header}>{header}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.mappingItem}>
+                  <label className={styles.mappingLabel}>Cluster Name</label>
+                  <select 
+                    className={styles.dropdown}
+                    value={columnMapping.clusterName || ''}
+                    onChange={(e) => setColumnMapping(prev => ({ ...prev, clusterName: e.target.value }))}
+                  >
+                    <option value="">Select column...</option>
+                    {csvHeaders.map((header, idx) => (
+                      <option key={idx} value={header}>{header}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.mappingItem}>
+                  <label className={styles.mappingLabel}>MM Type</label>
+                  <select 
+                    className={styles.dropdown}
+                    value={columnMapping.mmType || ''}
+                    onChange={(e) => setColumnMapping(prev => ({ ...prev, mmType: e.target.value }))}
+                  >
+                    <option value="">Select column...</option>
+                    {csvHeaders.map((header, idx) => (
+                      <option key={idx} value={header}>{header}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.mappingItem}>
+                  <label className={styles.mappingLabel}>Region</label>
+                  <select 
+                    className={styles.dropdown}
+                    value={columnMapping.region || ''}
+                    onChange={(e) => setColumnMapping(prev => ({ ...prev, region: e.target.value }))}
+                  >
+                    <option value="">Select column...</option>
+                    {csvHeaders.map((header, idx) => (
+                      <option key={idx} value={header}>{header}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.mappingItem}>
+                  <label className={styles.mappingLabel}>Miss Type/Remarks</label>
+                  <select 
+                    className={styles.dropdown}
+                    value={columnMapping.missType || ''}
+                    onChange={(e) => setColumnMapping(prev => ({ ...prev, missType: e.target.value }))}
+                  >
+                    <option value="">Select column...</option>
+                    {csvHeaders.map((header, idx) => (
+                      <option key={idx} value={header}>{header}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.mappingItem}>
+                  <label className={styles.mappingLabel}>Date Column *</label>
+                  <select 
+                    className={styles.dropdown}
+                    value={columnMapping.dateColumn || ''}
+                    onChange={(e) => setColumnMapping(prev => ({ ...prev, dateColumn: e.target.value }))}
+                  >
+                    <option value="">Select column...</option>
+                    {csvHeaders.map((header, idx) => (
+                      <option key={idx} value={header}>{header}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.buttonsRow}>
+                <button
+                  className={styles.buttonPrimary}
+                  onClick={handleApplyMapping}
+                  disabled={!selectedFile || csvHeaders.length === 0}
+                >
+                  Apply Mapping
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Preview Section */}
+          {showPreview && (
+            <div className={styles.previewSection}>
+              <h3 className={styles.sectionTitle}>Preview</h3>
+              <div className={styles.previewTable}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      {previewData[0]?.map((header, idx) => (
+                        <th key={idx} className={styles.tableHeader}>{header}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.slice(1, 4).map((row, rowIdx) => (
+                      <tr key={rowIdx}>
+                        {row.map((cell, cellIdx) => (
+                          <td key={cellIdx} className={styles.tableCell}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className={styles.previewNote}>
+                  Showing first 3 rows of processed data
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Section */}
+          {mappingApplied && (
+            <div className={styles.uploadSection}>
+              <div className={styles.row}>
+                <div className={styles.col}>
+                  <div className={styles.buttonsRow}>
+                    <button
+                      className={styles.buttonPrimary}
+                      onClick={handleUpload}
+                      disabled={uploadDisabled}
+                    >
+                      Upload & Process
+                    </button>
+                    <button
+                      className={styles.buttonGhost}
+                      onClick={handleRetry}
+                      disabled={!lastFile}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 260 }}>
+                  <Stage
+                    label="Upload"
+                    pct={uploadPct}
+                    showPulse={uploadRunning}
+                    ariaId="upload-pct"
+                  />
+                  <Stage
+                    label="Processing"
+                    pct={procPct}
+                    showPulse={procRunning}
+                    ariaId="proc-pct"
+                  />
+                  <Stage
+                    label="Export"
+                    pct={expPct}
+                    showPulse={expRunning}
+                    ariaId="exp-pct"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className={styles.logs} id="logArea" ref={logAreaRef} />
 

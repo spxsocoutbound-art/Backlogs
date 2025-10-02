@@ -350,8 +350,141 @@
 .error { border-color: rgba(255,107,107,0.18); background: linear-gradient(180deg, rgba(255,107,107,0.06), rgba(255,107,107,0.02)); color: #ffdede; }  
 .toastIcon { width: 14px; height: 14px; border-radius: 6px; }  
   
+/* Modern interface styles */
+.mappingSection {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.previewSection {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.uploadSection {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e6eef6;
+  margin: 0 0 16px 0;
+}
+
+.mappingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.mappingItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mappingLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dropdown {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #e6eef6;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.dropdown:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dropdown:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 194, 168, 0.2);
+}
+
+.dropdown option {
+  background: #0b1220;
+  color: #e6eef6;
+  padding: 8px;
+}
+
+/* Preview table styles */
+.previewTable {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tableHeader {
+  background: rgba(255, 255, 255, 0.04);
+  color: #e6eef6;
+  font-weight: 600;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tableCell {
+  padding: 10px 12px;
+  color: var(--muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.tableCell:last-child {
+  border-bottom: none;
+}
+
+.previewNote {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Enhanced button styles */
+.buttonPrimary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.buttonGhost:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* responsive tweaks */  
 @media (max-width: 680px) {  
   .wrap { padding: 12px; }  
-  .header { flex-direction: column; align-items: flex-start; }  
+  .header { flex-direction: column; align-items: flex-start; }
+  .mappingGrid {
+    grid-template-columns: 1fr;
+  }
+  .previewTable {
+    overflow-x: auto;
+  }
 }

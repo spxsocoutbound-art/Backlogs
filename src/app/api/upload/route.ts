@@ -1,8 +1,3 @@
-import { pipeline, Readable } from 'stream';
-import { promisify } from 'util';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
 import JSZip from "jszip";
 
 import { NextResponse } from 'next/server';
@@ -14,16 +9,32 @@ export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 export const config = { api: { bodyParser: false } };
 
-const pump = promisify(pipeline);
-
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("zip") as File | null;
+    const columnMappingStr = formData.get("columnMapping") as string | null;
 
     if (!file) {
       return NextResponse.json(
         { ok: false, message: "No ZIP file uploaded" },
+        { status: 400 }
+      );
+    }
+
+    if (!columnMappingStr) {
+      return NextResponse.json(
+        { ok: false, message: "No column mapping provided" },
+        { status: 400 }
+      );
+    }
+
+    let columnMapping;
+    try {
+      columnMapping = JSON.parse(columnMappingStr);
+    } catch {
+      return NextResponse.json(
+        { ok: false, message: "Invalid column mapping format" },
         { status: 400 }
       );
     }
@@ -49,7 +60,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const merged = await processCsvFiles(csvBuffers);
+    const merged = await processCsvFiles(csvBuffers, columnMapping);
     await writeToGoogleSheet(merged);
 
     return NextResponse.json({
