@@ -11,6 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.899.0",
     "csv-parse": "^6.1.0",
+    "google-auth-library": "^10.4.0",
     "googleapis": "^160.0.0",
     "jszip": "^3.10.1",
     "luxon": "^3.7.2",
